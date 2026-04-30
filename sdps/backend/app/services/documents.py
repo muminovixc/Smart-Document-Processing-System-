@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.models.documents import Document
 from fastapi import UploadFile
 import json
-import google.generativeai as genai
+from google import genai
 from app.models.documents import Document, LineItem, DocumentStatus, DocumentType
 
 UPLOAD_DIR = "static/uploads"
@@ -38,7 +38,8 @@ class DocumentService:
 
 
 # Konfiguracija API ključa (stavi svoj ključ ovdje ili u .env)
-genai.configure(api_key="API_KEY")
+api_key = os.environ.get("GEMINI_KEY") 
+client = genai.Client(api_key=api_key)
 
 class ExtractionService:
     @staticmethod

@@ -1,20 +1,27 @@
 # backend/app/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.controllers.documents import router as document_router
-from app.db.database import engine, Base 
+from app.db.database import engine, Base
+import os 
 
-try:
-    Base.metadata.create_all(bind=engine)
-    print("Baza podataka i tabele su uspješno inicijalizovane.")
-except Exception as e:
-    print(f"Greška pri inicijalizaciji baze: {e}")
+# 1. Definisanje putanje do foldera gde su slike
+# Koristimo apsolutnu putanju da izbegnemo probleme sa lokacijom terminala
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "static", "uploads"))
 
+
+
+print(f"DEBUG: Serviram fajlove iz: {UPLOAD_DIR}")
 app = FastAPI(
     title="SmartDocs AI API",
     description="Backend za automatsku ekstrakciju i validaciju dokumenata",
     version="1.0.0"
 )
+app.mount("/static", StaticFiles(directory=UPLOAD_DIR), name="static")
+ 
+
 
 # --- CORS KONFIGURACIJA ---
 # Bez ovoga će ti browser blokirati upload fajlova sa frontenda
@@ -25,10 +32,10 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["http://localhost:3000"], # Dozvoli svom frontendu
     allow_credentials=True,
-    allow_methods=["*"],  # Dozvoljava GET, POST, OPTIONS itd.
-    allow_headers=["*"],  # Dozvoljava sve headere
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # --- REGISTRACIJA KONTROLERA (RUTERA) ---
