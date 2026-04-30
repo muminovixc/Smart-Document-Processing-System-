@@ -23,7 +23,7 @@ def get_all_documents(db: Session = Depends(get_db)):
 
  
 
-
+#########################################################
 
 
 # Background function: extraction + validation

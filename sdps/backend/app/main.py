@@ -12,7 +12,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "static", "uploads"))
 
 
-
+#
 print(f"DEBUG: Serviram fajlove iz: {UPLOAD_DIR}")
 app = FastAPI(
     title="SmartDocs AI API",

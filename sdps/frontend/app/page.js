@@ -64,7 +64,7 @@ export default function UploadPage() {
     const fileUrl = `http://localhost:8000/static/${fileName}`;
     
     const isPDF = doc.original_filename.toLowerCase().endsWith('.pdf');
-
+//
     if (isPDF) {
         console.log("Prikazujem PDF sa URL: " + fileUrl);
         return (
