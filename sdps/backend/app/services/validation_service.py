@@ -9,7 +9,6 @@ class ValidationService:
     def validate_document(db_doc: Document, db: Session) -> Document:
         errors = []
 
-        # ── 1. Subtotal + Tax = Total ─────────────────────────────────────────
         subtotal    = db_doc.subtotal     or 0.0
         tax         = db_doc.tax_amount   or 0.0
         total       = db_doc.total_amount or 0.0
@@ -23,7 +22,6 @@ class ValidationService:
                 f"but document total is {actual_total}"
             )
 
-        # ── 2. Duplicate doc_number ───────────────────────────────────────────
         if db_doc.doc_number:
             duplicate = db.query(Document).filter(
                 Document.doc_number == db_doc.doc_number,
@@ -33,8 +31,6 @@ class ValidationService:
                 db_doc.is_duplicate = True
                 errors.append(f"Duplicate document number: {db_doc.doc_number}")
 
-        # ── 3. Line item math errors ──────────────────────────────────────────
-        # BUG FIX: bio je db_doc.items — treba db_doc.line_items
         if db_doc.line_items:
             bad_items = [
                 item.description or f"Item #{i+1}"
@@ -44,7 +40,6 @@ class ValidationService:
             if bad_items:
                 errors.append(f"Line item math error in: {', '.join(bad_items)}")
 
-        # ── 4. Missing required fields ────────────────────────────────────────
         if not db_doc.supplier_name:
             errors.append("Missing supplier name")
 
@@ -54,14 +49,12 @@ class ValidationService:
         if not db_doc.issue_date:
             errors.append("Missing issue date")
 
-        # ── 5. Date logic: due_date must be after issue_date ──────────────────
         if db_doc.issue_date and db_doc.due_date:
             if db_doc.due_date < db_doc.issue_date:
                 errors.append(
                     f"Due date ({db_doc.due_date}) is before issue date ({db_doc.issue_date})"
                 )
 
-        # ── 6. Line items sum vs subtotal ─────────────────────────────────────
         if db_doc.line_items and subtotal > 0:
             items_sum = round(sum(item.line_total or 0.0 for item in db_doc.line_items), 2)
             if abs(items_sum - round(subtotal, 2)) > 0.01:
@@ -69,8 +62,10 @@ class ValidationService:
                     f"Line items sum ({items_sum}) does not match subtotal ({subtotal})"
                 )
 
-        # ── Set status ────────────────────────────────────────────────────────
-        if errors:
+        if db_doc.is_duplicate:
+            db_doc.status = DocumentStatus.rejected
+            db_doc.validation_errors = json.dumps(errors) if errors else json.dumps(["Duplicate document number"])
+        elif errors:
             db_doc.status = DocumentStatus.needs_review
             db_doc.validation_errors = json.dumps(errors)
         else:

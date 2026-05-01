@@ -1,7 +1,11 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import "@/stylesheet/landingPage.css";
-import Link from 'next/link';
+import NavHeader from "@/components/dashboard/NavHeader";
+import PreviewModal from "@/components/dashboard/PreviewModal";
+import DropZone from "@/components/dashboard/DropZone";
+import DocumentGrid from "@/components/dashboard/DocumentGrid";
+import TitleSection from "@/components/dashboard/TitleSection";
 
 export default function UploadPage() {
   const [files, setFiles] = useState([]);
@@ -99,41 +103,21 @@ export default function UploadPage() {
 
   return (
     <div className="upload-container">
-      {/* MODAL ZA PREGLED */}
       {previewDoc && (
-        <div className="modal-overlay" onClick={() => setPreviewDoc(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{previewDoc.original_filename}</h3>
-              <button className="close-btn" onClick={() => setPreviewDoc(null)}>
-                &times;
-              </button>
-            </div>
-            <div className="modal-body">{renderPreviewContent(previewDoc)}</div>
-          </div>
-        </div>
+        <PreviewModal
+          previewDoc={previewDoc}
+          onClose={() => setPreviewDoc(null)}
+          renderPreviewContent={renderPreviewContent}
+        />
       )}
 
-      <nav className="nav-header">
-        <div className="nav-content">
-          <div className="logo">SmartDocs AI</div>
-
-          {/* Čisti Next.js Link sa CSS klasom */}
-          <Link href="/list" className="nav-list-link">
-            View Document List
-            <span className="arrow">→</span>
-          </Link>
-        </div>
-      </nav>
+      <NavHeader />
 
       <main className="main-layout">
-        <section className="title-section">
-          <h1>Data Extraction System</h1>
-          <p>Upload invoices or purchase orders for validation</p>
-        </section>
+        <TitleSection />
 
-        <div
-          className={`drop-zone ${dragging ? "dragging" : ""}`}
+        <DropZone
+          dragging={dragging}
           onDragOver={(e) => {
             e.preventDefault();
             setDragging(true);
@@ -145,28 +129,9 @@ export default function UploadPage() {
             handleFileSelection(e.dataTransfer.files);
           }}
           onClick={() => fileInputRef.current.click()}
-        >
-          <input
-            type="file"
-            ref={fileInputRef}
-            multiple
-            hidden
-            onChange={(e) => handleFileSelection(e.target.files)}
-          />
-          <div className="icon-wrapper">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#666"
-              strokeWidth="2"
-            >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
-            </svg>
-          </div>
-          <p style={{ fontWeight: 600 }}>Click or drag files here</p>
-        </div>
+          fileInputRef={fileInputRef}
+          onFileChange={(e) => handleFileSelection(e.target.files)}
+        />
 
         {files.length > 0 && (
           <button
@@ -178,90 +143,10 @@ export default function UploadPage() {
           </button>
         )}
 
-        <section className="dashboard-section">
-          <h2 style={{ fontSize: 20, fontWeight: 700 }}>Recent Documents</h2>
-          <div className="document-grid">
-            {dbDocuments.map((doc) => (
-              <div key={doc.id} className={`doc-card ${doc.status}`}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                  }}
-                >
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 15 }}>
-                      {doc.original_filename}
-                    </div>
-                    <div style={{ fontSize: 12, color: "#888" }}>
-                      ID: {doc.id} •{" "}
-                      {new Date(doc.created_at).toLocaleDateString()}
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-end",
-                      gap: "8px",
-                    }}
-                  >
-                    <span className={`status-tag status-${doc.status}`}>
-                      {doc.status.replace("_", " ")}
-                    </span>
-                    {/* DUGME ZA PREVIEW */}
-                    <button
-                      className="view-btn"
-                      onClick={() => setPreviewDoc(doc)}
-                      style={{
-                        padding: "4px 8px",
-                        fontSize: "11px",
-                        cursor: "pointer",
-                        borderRadius: "4px",
-                        border: "1px solid #ddd",
-                      }}
-                    >
-                      View Document
-                    </button>
-                  </div>
-                </div>
-
-                {doc.status !== "uploaded" && (
-                  <div
-                    style={{
-                      marginTop: 15,
-                      paddingTop: 15,
-                      borderTop: "1px solid #eee",
-                    }}
-                  >
-                    <div className="data-row">
-                      <span>
-                        Supplier: <strong>{doc.supplier_name || "N/A"}</strong>
-                      </span>
-                      <span>
-                        Total:{" "}
-                        <strong>
-                          {doc.total_amount} {doc.currency}
-                        </strong>
-                      </span>
-                    </div>
-
-                    {doc.validation_errors && (
-                      <div className="error-list">
-                        {JSON.parse(doc.validation_errors).map((err, i) => (
-                          <div key={i} className="error-item">
-                            Warning: {err}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
+        <DocumentGrid
+          dbDocuments={dbDocuments}
+          onView={(doc) => setPreviewDoc(doc)}
+        />
       </main>
     </div>
   );

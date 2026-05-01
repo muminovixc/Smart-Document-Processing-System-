@@ -24,9 +24,6 @@ class ExtractionService:
 
         client = genai.Client(api_key=api_key)
 
-        # ── Prompt ────────────────────────────────────────────────────────────
-        # IMPORTANT: Be explicit about extracting EXACTLY what's on the document.
-        # Do NOT recalculate or correct totals — extract them as-is so validation catches errors.
         prompt = """
 Extract data from this business document exactly as written. Do NOT correct or recalculate any numbers.
 
@@ -62,7 +59,6 @@ CRITICAL RULES:
             ext = file_path.lower().rsplit('.', 1)[-1] if '.' in file_path else ''
             contents = []
 
-            # ── CSV → send as text ────────────────────────────────────────────
             if ext == 'csv':
                 try:
                     with open(file_path, "r", encoding="utf-8") as f:
@@ -72,13 +68,11 @@ CRITICAL RULES:
                         csv_text = f.read()
                 contents = [f"{prompt}\n\nDocument contents (CSV):\n{csv_text}"]
 
-            # ── TXT → send as text ────────────────────────────────────────────
             elif ext == 'txt':
                 with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                     txt_text = f.read()
                 contents = [f"{prompt}\n\nDocument contents (TXT):\n{txt_text}"]
 
-            # ── PDF / Image → send as binary ──────────────────────────────────
             else:
                 with open(file_path, "rb") as f:
                     file_data = f.read()
@@ -95,7 +89,6 @@ CRITICAL RULES:
                     types.Part.from_bytes(data=file_data, mime_type=mime_type),
                 ]
 
-            # ── Call Gemini ───────────────────────────────────────────────────
             response = client.models.generate_content(
                 model='gemini-flash-latest',
                 contents=contents,
@@ -109,7 +102,6 @@ CRITICAL RULES:
                 print("ERROR: Gemini returned empty response")
                 return None
 
-            # ── Parse JSON ────────────────────────────────────────────────────
             try:
                 data = json.loads(response.text)
             except json.JSONDecodeError:
@@ -118,7 +110,6 @@ CRITICAL RULES:
 
             db_doc.raw_extracted_json = json.dumps(data)
 
-            # ── Map doc_type ──────────────────────────────────────────────────
             raw_type = str(data.get('doc_type', '')).lower()
             if 'invoice' in raw_type:
                 db_doc.doc_type = "invoice"
@@ -127,7 +118,6 @@ CRITICAL RULES:
             else:
                 db_doc.doc_type = "unknown"
 
-            # ── Map header fields ─────────────────────────────────────────────
             db_doc.doc_number    = data.get('doc_number')
             db_doc.supplier_name = data.get('supplier_name')
             db_doc.issue_date    = data.get('issue_date')
@@ -140,12 +130,10 @@ CRITICAL RULES:
                 except (ValueError, TypeError):
                     return 0.0
 
-            # ── CRITICAL: store exactly as extracted — do NOT recalculate ─────
             db_doc.subtotal     = safe_float(data.get('subtotal'))
             db_doc.tax_amount   = safe_float(data.get('tax_amount'))
             db_doc.total_amount = safe_float(data.get('total_amount'))
 
-            # ── Map line items ────────────────────────────────────────────────
             line_items_data = data.get('line_items') or []
             if isinstance(line_items_data, list):
                 for item in line_items_data:
@@ -161,7 +149,6 @@ CRITICAL RULES:
                         unit_price=price,
                         line_total=l_total,
                         calculated_total=calc_total,
-                        # Flag if extracted line_total differs from qty*price
                         has_math_error=abs(calc_total - l_total) > 0.01,
                     )
                     db.add(new_item)
