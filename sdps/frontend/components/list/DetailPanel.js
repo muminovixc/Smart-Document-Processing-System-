@@ -144,36 +144,7 @@ export default function DetailPanel({ doc, onClose }) {
           </div>
         )}
 
-        <div style={{ marginTop: 24, display: "flex", gap: 8 }}>
-          <button
-            style={{
-              flex: 1,
-              padding: "9px 0",
-              borderRadius: 8,
-              background: "#1a1a1a",
-              color: "#fff",
-              border: "none",
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: "pointer",
-            }}
-          >
-            Open review screen
-          </button>
-          <button
-            style={{
-              padding: "9px 14px",
-              borderRadius: 8,
-              background: "#fff",
-              color: "#555",
-              border: "1px solid #e0e0e0",
-              fontSize: 13,
-              cursor: "pointer",
-            }}
-          >
-            <MoreHorizontal size={15} />
-          </button>
-        </div>
+        
       </div>
     </div>
   );

@@ -213,7 +213,7 @@ export default function Dashboard() {
                   fontSize: 13,
                   fontWeight: 500,
                   cursor: "pointer",
-                  textDecoration: "none", // Dodaj ovo da ukloniš podvlačenje linka
+                  textDecoration: "none",
                 }}
               >
                 <Upload size={13} /> Upload
@@ -352,41 +352,7 @@ export default function Dashboard() {
                     transform: "translateY(-50%)",
                   }}
                 />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search..."
-                  style={{
-                    paddingLeft: 30,
-                    paddingRight: 12,
-                    paddingTop: 6,
-                    paddingBottom: 6,
-                    borderRadius: 8,
-                    border: "1px solid #e8e8e8",
-                    background: "#fafafa",
-                    fontSize: 12,
-                    color: "#333",
-                    width: 180,
-                    outline: "none",
-                  }}
-                />
               </div>
-              <button
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 5,
-                  padding: "6px 12px",
-                  borderRadius: 8,
-                  border: "1px solid #e8e8e8",
-                  background: "#fafafa",
-                  fontSize: 12,
-                  color: "#888",
-                  cursor: "pointer",
-                }}
-              >
-                <Filter size={11} /> Filter
-              </button>
             </div>
           </div>
 
