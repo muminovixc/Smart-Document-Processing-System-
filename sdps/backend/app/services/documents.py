@@ -34,6 +34,18 @@ class DocumentService:
         db.refresh(new_doc)
         return new_doc
     
+    @staticmethod
+    def get_all(db: Session) -> list[Document]:
+        return (
+                db.query(Document)
+                .order_by(Document.created_at.desc())
+                .all()
+            )
+    
+    @staticmethod
+    def get_by_id(db: Session, document_id: int) -> Document | None:
+        return db.query(Document).filter(Document.id == document_id).first()
+    
 
 
 

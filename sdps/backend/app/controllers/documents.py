@@ -50,3 +50,18 @@ async def upload_document(
     background_tasks.add_task(process_workflow, db_doc.id, db)
     
     return db_doc
+
+
+@router.get("/list", response_model=list[DocumentOut])
+def list_documents(db: Session = Depends(get_db)):
+    """Return all documents ordered by newest first."""
+    return DocumentService.get_all(db)
+ 
+ 
+@router.get("/{document_id}", response_model=DocumentOut)
+def get_document(document_id: int, db: Session = Depends(get_db)):
+    """Return a single document with its line items."""
+    doc = DocumentService.get_by_id(db, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return doc

@@ -3,162 +3,175 @@ import json
 import re
 from sqlalchemy.orm import Session
 from google import genai
-from app.models.documents import Document, LineItem, DocumentType
+from app.models.documents import Document, LineItem
 from google.genai import types
 import traceback
 
-def clean_ai_json(text: str):
-    """Čisti markdown tagove koje Gemini često dodaje u odgovor."""
-    if not text:
-        return ""
-    # Uklanja ```json i ``` blokove
-    text = re.sub(r'```json\s?|\s?```', '', text)
-    return text.strip()
 
 class ExtractionService:
+
     @staticmethod
-    def extract_data(file_path: str, db_doc: any, db: Session):
-        """
-        Ekstraktuje podatke iz PDF, slika ili CSV fajlova koristeći Gemini AI.
-        """
-        # 1. OSIGURANJE: Provjera ulaznih parametara
-        if file_path is None:
-            print("ERROR: extract_data je pozvan sa file_path = None")
+    def extract_data(file_path: str, db_doc: Document, db: Session) -> Document | None:
+
+        if not file_path:
+            print("ERROR: extract_data called with file_path = None")
             return None
 
         api_key = os.environ.get("GEMINI_KEY")
         if not api_key:
-            print("ERROR: GEMINI_KEY nije konfigurisan u environment varijablama.")
+            print("ERROR: GEMINI_KEY not set")
             return None
 
         client = genai.Client(api_key=api_key)
-        
-        # Prompt koji forsira čisti JSON
+
+        # ── Prompt ────────────────────────────────────────────────────────────
+        # IMPORTANT: Be explicit about extracting EXACTLY what's on the document.
+        # Do NOT recalculate or correct totals — extract them as-is so validation catches errors.
         prompt = """
-        Extract data from this document. Return ONLY a JSON object with these keys:
-        doc_type (invoice or purchase_order), doc_number, supplier_name, 
-        issue_date (YYYY-MM-DD), due_date (YYYY-MM-DD), currency, 
-        subtotal (float), tax_amount (float), total_amount (float),
-        line_items (list of objects with: description, quantity, unit_price, line_total).
-        """
+Extract data from this business document exactly as written. Do NOT correct or recalculate any numbers.
+
+Return ONLY a valid JSON object with these keys:
+{
+  "doc_type": "invoice" or "purchase_order",
+  "doc_number": "string or null",
+  "supplier_name": "string or null",
+  "issue_date": "YYYY-MM-DD or null",
+  "due_date": "YYYY-MM-DD or null",
+  "currency": "EUR/USD/BAM/etc or null",
+  "subtotal": float or 0.0,
+  "tax_amount": float or 0.0,
+  "total_amount": float or 0.0,
+  "line_items": [
+    {
+      "description": "string",
+      "quantity": float,
+      "unit_price": float,
+      "line_total": float
+    }
+  ]
+}
+
+CRITICAL RULES:
+- Extract subtotal, tax_amount, and total_amount EXACTLY as they appear on the document.
+- Do NOT fix math errors — if the document says total is 800 but subtotal+tax=774, extract 800.
+- If a field is not present, use null for strings and 0.0 for numbers.
+- line_total per item must be extracted as written, not recalculated.
+"""
 
         try:
-            # Sigurno izvlačenje ekstenzije (fiks za 'NoneType' error)
-            ext = file_path.lower().split('.')[-1] if '.' in file_path else ''
+            ext = file_path.lower().rsplit('.', 1)[-1] if '.' in file_path else ''
             contents = []
 
-            # --- LOGIKA ZA CSV (Šalje se kao tekst) ---
+            # ── CSV → send as text ────────────────────────────────────────────
             if ext == 'csv':
-                print(f"DEBUG: Procesiranje CSV fajla: {file_path}")
                 try:
                     with open(file_path, "r", encoding="utf-8") as f:
                         csv_text = f.read()
                 except UnicodeDecodeError:
                     with open(file_path, "r", encoding="latin-1") as f:
                         csv_text = f.read()
-                
-                # CSV ide direktno u prompt kao tekst
-                contents = [f"{prompt}\n\nOvo su podaci iz CSV fajla:\n{csv_text}"]
+                contents = [f"{prompt}\n\nDocument contents (CSV):\n{csv_text}"]
 
-            # --- LOGIKA ZA SLIKE I PDF (Šalje se kao binarni podaci) ---
+            # ── TXT → send as text ────────────────────────────────────────────
+            elif ext == 'txt':
+                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                    txt_text = f.read()
+                contents = [f"{prompt}\n\nDocument contents (TXT):\n{txt_text}"]
+
+            # ── PDF / Image → send as binary ──────────────────────────────────
             else:
-                print(f"DEBUG: Procesiranje binarnog fajla ({ext}): {file_path}")
-                with open(file_path, "rb") as doc_file:
-                    file_data = doc_file.read()
-                
-                mime_type = "application/pdf" if ext == "pdf" else "image/png"
-                if ext in ["jpg", "jpeg"]:
-                    mime_type = "image/jpeg"
+                with open(file_path, "rb") as f:
+                    file_data = f.read()
 
+                mime_map = {
+                    "pdf":  "application/pdf",
+                    "png":  "image/png",
+                    "jpg":  "image/jpeg",
+                    "jpeg": "image/jpeg",
+                }
+                mime_type = mime_map.get(ext, "application/octet-stream")
                 contents = [
                     prompt,
-                    types.Part.from_bytes(data=file_data, mime_type=mime_type)
+                    types.Part.from_bytes(data=file_data, mime_type=mime_type),
                 ]
 
-            # 2. POZIV GEMINI API-ja
+            # ── Call Gemini ───────────────────────────────────────────────────
             response = client.models.generate_content(
                 model='gemini-flash-latest',
                 contents=contents,
                 config=types.GenerateContentConfig(
                     candidate_count=1,
-                    response_mime_type='application/json' # Forsira JSON format
+                    response_mime_type='application/json',
                 )
             )
 
             if not response or not response.text:
-                print("DEBUG: AI nije vratio sadržaj.")
+                print("ERROR: Gemini returned empty response")
                 return None
 
-            # 3. PARSIRANJE I ČIŠĆENJE
-            # Ako imaš funkciju clean_ai_json koristi je, ako ne, json.loads je dovoljan zbog response_mime_type
+            # ── Parse JSON ────────────────────────────────────────────────────
             try:
                 data = json.loads(response.text)
             except json.JSONDecodeError:
-                # Fallback u slučaju da AI ipak ubaci markdown blockove ```json
-                clean_text = response.text.replace("```json", "").replace("```", "").strip()
-                data = json.loads(clean_text)
+                clean = re.sub(r'```json\s?|\s?```', '', response.text).strip()
+                data = json.loads(clean)
 
-            # Spremanje sirovog JSON-a radi debugovanja
             db_doc.raw_extracted_json = json.dumps(data)
-            
-            # 4. MAPIRANJE U BAZU (Safety First)
-            raw_val = data.get('doc_type')
-            raw_type = str(raw_val).lower() if raw_val else 'unknown'
-            
-            # Pretpostavka: DocumentType je Enum u tvom modelu
+
+            # ── Map doc_type ──────────────────────────────────────────────────
+            raw_type = str(data.get('doc_type', '')).lower()
             if 'invoice' in raw_type:
-                db_doc.doc_type = "invoice" # ili DocumentType.invoice
+                db_doc.doc_type = "invoice"
             elif 'purchase' in raw_type:
-                db_doc.doc_type = "purchase_order" # ili DocumentType.purchase_order
+                db_doc.doc_type = "purchase_order"
             else:
                 db_doc.doc_type = "unknown"
 
-            db_doc.doc_number = data.get('doc_number')
+            # ── Map header fields ─────────────────────────────────────────────
+            db_doc.doc_number    = data.get('doc_number')
             db_doc.supplier_name = data.get('supplier_name')
-            db_doc.issue_date = data.get('issue_date')
-            db_doc.due_date = data.get('due_date')
-            db_doc.currency = data.get('currency')
-            
-            # Konverzija brojeva (osiguranje od None ili stringova)
-            def safe_float(val):
-                try: return float(val) if val is not None else 0.0
-                except: return 0.0
+            db_doc.issue_date    = data.get('issue_date')
+            db_doc.due_date      = data.get('due_date')
+            db_doc.currency      = data.get('currency')
 
-            db_doc.subtotal = safe_float(data.get('subtotal'))
-            db_doc.tax_amount = safe_float(data.get('tax_amount'))
+            def safe_float(val):
+                try:
+                    return float(val) if val is not None else 0.0
+                except (ValueError, TypeError):
+                    return 0.0
+
+            # ── CRITICAL: store exactly as extracted — do NOT recalculate ─────
+            db_doc.subtotal     = safe_float(data.get('subtotal'))
+            db_doc.tax_amount   = safe_float(data.get('tax_amount'))
             db_doc.total_amount = safe_float(data.get('total_amount'))
 
-            # 5. MAPIRANJE STAVKI (Line Items)
-            if 'line_items' in data and isinstance(data['line_items'], list):
-                # Očisti stare stavke ako postoje (opcionalno)
-                # db.query(LineItem).filter(LineItem.document_id == db_doc.id).delete()
-                
-                for item in data['line_items']:
-                    qty = safe_float(item.get('quantity'))
-                    price = safe_float(item.get('unit_price'))
-                    l_total = safe_float(item.get('line_total'))
-                    calc_total = qty * price
-                    
-                    # Ovdje koristiš svoj LineItem model
+            # ── Map line items ────────────────────────────────────────────────
+            line_items_data = data.get('line_items') or []
+            if isinstance(line_items_data, list):
+                for item in line_items_data:
+                    qty        = safe_float(item.get('quantity'))
+                    price      = safe_float(item.get('unit_price'))
+                    l_total    = safe_float(item.get('line_total'))
+                    calc_total = round(qty * price, 2)
+
                     new_item = LineItem(
                         document_id=db_doc.id,
-                        description=item.get('description', 'No description'),
+                        description=item.get('description') or 'No description',
                         quantity=qty,
                         unit_price=price,
                         line_total=l_total,
                         calculated_total=calc_total,
-                        has_math_error=abs(calc_total - l_total) > 0.01
+                        # Flag if extracted line_total differs from qty*price
+                        has_math_error=abs(calc_total - l_total) > 0.01,
                     )
                     db.add(new_item)
 
             db.commit()
-            print(f"DEBUG: Ekstrakcija uspješna za dokument ID: {db_doc.id}")
+            print(f"Extraction OK — doc ID: {db_doc.id}, total: {db_doc.total_amount}")
             return db_doc
 
-        except Exception as e:
+        except Exception:
             db.rollback()
-            print("\n" + "="*50)
-            print("KRITIČNA GREŠKA U EXTRACTION SERVISU:")
+            print("EXTRACTION ERROR:")
             traceback.print_exc()
-            print("="*50 + "\n")
             return None

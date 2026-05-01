@@ -408,3 +408,50 @@
 .view-btn:hover {
     background: #f0f0f0;
 }
+/* Kontejner za navigaciju (već ga vjerovatno imaš, ali provjeri flex) */
+.nav-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Stil za novo dugme/link */
+.nav-list-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #000000; /* Next.js plava ili tvoja primarna boja */
+    color: white;
+    padding: 10px 18px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.nav-list-link:hover {
+    background-color: #1b3858;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.nav-list-link .arrow {
+    transition: transform 0.2s ease;
+}
+
+.nav-list-link:hover .arrow {
+    transform: translateX(4px);
+}
+
+/* Responzivnost za mobilne uređaje */
+@media (max-width: 600px) {
+    .nav-list-link {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+}

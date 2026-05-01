@@ -44,6 +44,10 @@ class Document(Base):
 
     items = relationship("LineItem", back_populates="document", cascade="all, delete-orphan")
 
+    @property
+    def line_items(self):
+        return self.items
+
 class LineItem(Base):
     __tablename__ = "line_items"
 
