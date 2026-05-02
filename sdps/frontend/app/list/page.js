@@ -63,11 +63,14 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const API_BASE_URL =
+    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+
   const fetchDocs = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("http://localhost:8000/documents/list");
+      const res = await fetch(`${API_BASE_URL}/documents/list`);
       if (!res.ok) throw new Error(`Server error ${res.status}`);
       const data = await res.json();
       setDocs(data.map(mapDoc));
