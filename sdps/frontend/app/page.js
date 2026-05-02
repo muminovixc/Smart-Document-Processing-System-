@@ -20,7 +20,7 @@ export default function UploadPage() {
   const fileInputRef = useRef(null);
 
   const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+    "https://smart-document-processing-system-xsp7.onrender.com";
 
   const fetchDocuments = async () => {
     try {

@@ -64,7 +64,7 @@ export default function Dashboard() {
   const [error, setError] = useState(null);
 
   const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+    "https://smart-document-processing-system-xsp7.onrender.com";
 
   const fetchDocs = async () => {
     setLoading(true);
