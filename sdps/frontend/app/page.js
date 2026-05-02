@@ -17,12 +17,14 @@ export default function UploadPage() {
   const [previewContent, setPreviewContent] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState("");
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
   const fileInputRef = useRef(null);
 
   const API_BASE_URL =
     "https://smart-document-processing-system-xsp7.onrender.com";
 
   const fetchDocuments = async () => {
+    setIsLoadingDocuments(true);
     try {
       const res = await fetch(`${API_BASE_URL}/documents`);
       if (res.ok) {
@@ -31,6 +33,8 @@ export default function UploadPage() {
       }
     } catch (err) {
       console.error("Error fetching documents");
+    } finally {
+      setIsLoadingDocuments(false);
     }
   };
 
@@ -211,6 +215,22 @@ export default function UploadPage() {
           Please wait 5-10 seconds and refresh the page if the backend server is
           still starting.
         </div>
+
+        {isLoadingDocuments && (
+          <div
+            style={{
+              margin: "10px 0",
+              padding: "12px 16px",
+              borderRadius: 12,
+              background: "#eef4ff",
+              border: "1px solid #b8d0ff",
+              color: "#1a3d8f",
+              fontSize: 14,
+            }}
+          >
+            Loading documents from the database... please wait a moment.
+          </div>
+        )}
 
         <DropZone
           dragging={dragging}
