@@ -11,8 +11,12 @@ export default function UploadPage() {
   const [files, setFiles] = useState([]);
   const [dbDocuments, setDbDocuments] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [validationMessage, setValidationMessage] = useState("");
   const [dragging, setDragging] = useState(false);
   const [previewDoc, setPreviewDoc] = useState(null); // Stanje za modal
+  const [previewContent, setPreviewContent] = useState("");
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState("");
   const fileInputRef = useRef(null);
 
   const API_BASE_URL = "http://localhost:8000";
@@ -35,12 +39,56 @@ export default function UploadPage() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const loadPreviewContent = async () => {
+      if (!previewDoc) {
+        setPreviewContent("");
+        setPreviewLoading(false);
+        setPreviewError("");
+        return;
+      }
+
+      const ext = previewDoc.original_filename.toLowerCase().split(".").pop();
+      if (ext !== "txt" && ext !== "csv") {
+        setPreviewContent("");
+        setPreviewLoading(false);
+        setPreviewError("");
+        return;
+      }
+
+      setPreviewLoading(true);
+      setPreviewError("");
+      setPreviewContent("");
+
+      const fileName = previewDoc.file_path.split(/[/\\]/).pop();
+      const fileUrl = `http://localhost:8000/static/${fileName}`;
+
+      try {
+        const res = await fetch(fileUrl);
+        if (!res.ok) {
+          throw new Error(`Unable to load file: ${res.status}`);
+        }
+        const text = await res.text();
+        setPreviewContent(text);
+      } catch (err) {
+        console.error(err);
+        setPreviewError("Unable to load preview content.");
+      } finally {
+        setPreviewLoading(false);
+      }
+    };
+
+    loadPreviewContent();
+  }, [previewDoc]);
+
   const handleFileSelection = (selectedFiles) => {
     setFiles(Array.from(selectedFiles));
   };
 
   const uploadAll = async () => {
     setUploading(true);
+    setValidationMessage("Uploading and validating documents...");
+
     for (const file of files) {
       const formData = new FormData();
       formData.append("file", file);
@@ -53,25 +101,21 @@ export default function UploadPage() {
         console.error("Upload failed for " + file.name);
       }
     }
+
     setFiles([]);
+    setValidationMessage("Validation complete. Refreshing document list...");
+    await fetchDocuments();
+    setValidationMessage("");
     setUploading(false);
-    fetchDocuments();
   };
 
   // Helper funkcija za prikaz dokumenta
   const renderPreviewContent = (doc) => {
-    // 1. Dobijamo samo ime fajla (npr. "moj_dokument.pdf")
-    // Koristimo regex [/\\] da splitujemo i po forward slash i po backslash (bitno za Windows)
     const fileName = doc.file_path.split(/[/\\]/).pop();
-
-    // 2. KORISTIMO URL BACKENDA, A NE PUTANJU FOLDERA
-    // Browseru treba adresa servera, a server zna da "/static" mapira na tvoj folder na disku
     const fileUrl = `http://localhost:8000/static/${fileName}`;
+    const ext = doc.original_filename.toLowerCase().split(".").pop();
 
-    const isPDF = doc.original_filename.toLowerCase().endsWith(".pdf");
-    //
-    if (isPDF) {
-      console.log("Prikazujem PDF sa URL: " + fileUrl);
+    if (ext === "pdf") {
       return (
         <embed
           src={fileUrl}
@@ -80,6 +124,42 @@ export default function UploadPage() {
           height="600px"
         />
       );
+    }
+
+    if (ext === "txt" || ext === "csv") {
+      if (previewLoading) {
+        return <div>Loading preview...</div>;
+      }
+      if (previewError) {
+        return <div>{previewError}</div>;
+      }
+      if (previewContent) {
+        if (ext === "csv") {
+          const rows = previewContent
+            .split("\n")
+            .filter(Boolean)
+            .map((row) => row.split(","));
+          return (
+            <div className="text-preview">
+              <table className="csv-preview-table">
+                <tbody>
+                  {rows.map((row, rowIndex) => (
+                    <tr key={rowIndex}>
+                      {row.map((cell, cellIndex) => (
+                        <td key={cellIndex}>{cell}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+
+        return <pre className="text-preview">{previewContent}</pre>;
+      }
+
+      return <div>No preview available yet.</div>;
     }
 
     return (
@@ -139,8 +219,17 @@ export default function UploadPage() {
             onClick={uploadAll}
             disabled={uploading}
           >
-            {uploading ? "Processing..." : `Process ${files.length} documents`}
+            {uploading
+              ? "Uploading and validating..."
+              : `Process ${files.length} documents`}
           </button>
+        )}
+
+        {(uploading || validationMessage) && (
+          <div className="upload-status">
+            <span className="upload-status-dot" />
+            <span>{validationMessage || "Validating documents..."}</span>
+          </div>
         )}
 
         <DocumentGrid

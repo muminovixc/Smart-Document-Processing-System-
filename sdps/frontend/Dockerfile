@@ -5,6 +5,7 @@ COPY package.json package-lock.json* ./
 RUN npm install
 
 COPY . .
+RUN if [ -d app/public ]; then mkdir -p public && cp -r app/public/* public/; fi
 RUN npm run build
 
 FROM node:20-alpine AS runner
@@ -13,7 +14,7 @@ WORKDIR /app
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
+COPY --from=builder /app/app/public ./public
 
 EXPOSE 3000
 ENV NODE_ENV=production
