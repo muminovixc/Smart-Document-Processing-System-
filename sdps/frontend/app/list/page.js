@@ -268,8 +268,8 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* Error state */}
-        { <div
+        {error && (
+          <div
             style={{
               background: "#FCEBEB",
               border: "1px solid #F5C6C6",
@@ -287,7 +287,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Table card */}
+        <div
           style={{
             background: "#fff",
             borderRadius: 14,
@@ -295,7 +295,7 @@ export default function Dashboard() {
             overflow: "hidden",
           }}
         >
-          {/* Toolbar */}
+          <div
             style={{
               padding: "14px 20px",
               borderBottom: "0.5px solid #F0EFE9",

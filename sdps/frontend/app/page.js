@@ -197,6 +197,21 @@ export default function UploadPage() {
       <main className="main-layout">
         <TitleSection />
 
+        <div
+          style={{
+            margin: "20px 0",
+            padding: "14px 18px",
+            borderRadius: 12,
+            background: "#f9f3d7",
+            border: "1px solid #f1d78a",
+            color: "#6f5500",
+            fontSize: 14,
+          }}
+        >
+          Please wait 5-10 seconds and refresh the page if the backend server is
+          still starting.
+        </div>
+
         <DropZone
           dragging={dragging}
           onDragOver={(e) => {
