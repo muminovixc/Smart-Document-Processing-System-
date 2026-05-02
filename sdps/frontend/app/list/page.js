@@ -14,7 +14,6 @@ import MetricCard from "@/components/list/MetricCard";
 import DetailPanel from "@/components/list/DetailPanel";
 import DocumentsTable from "@/components/list/DocumentsTable";
 
-// ── Map DB document → UI shape ────────────────────────────────────────────────
 function mapDoc(doc) {
   const ext = doc.file_type?.toLowerCase() || "pdf";
   const issues = (() => {
@@ -46,7 +45,6 @@ function mapDoc(doc) {
   };
 }
 
-// ── Main Dashboard ─────────────────────────────────────────────────────────────
 const TABS = [
   { key: "all", label: "All" },
   { key: "uploaded", label: "Uploaded" },
@@ -149,7 +147,6 @@ export default function Dashboard() {
         .review-action:hover { background: #f0f0f0 !important; }
       `}</style>
 
-      {/* Header */}
       <div
         style={{
           background: "#fff",
@@ -245,7 +242,6 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Metrics */}
         <div style={{ display: "flex", gap: 10, marginBottom: 28 }}>
           <MetricCard
             label="Total"
@@ -273,8 +269,7 @@ export default function Dashboard() {
         </div>
 
         {/* Error state */}
-        {error && (
-          <div
+        { <div
             style={{
               background: "#FCEBEB",
               border: "1px solid #F5C6C6",
@@ -293,7 +288,6 @@ export default function Dashboard() {
         )}
 
         {/* Table card */}
-        <div
           style={{
             background: "#fff",
             borderRadius: 14,
@@ -302,7 +296,6 @@ export default function Dashboard() {
           }}
         >
           {/* Toolbar */}
-          <div
             style={{
               padding: "14px 20px",
               borderBottom: "0.5px solid #F0EFE9",

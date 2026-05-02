@@ -14,12 +14,10 @@ class ExtractionService:
     def extract_data(file_path: str, db_doc: Document, db: Session) -> Document | None:
 
         if not file_path:
-            print("ERROR: extract_data called with file_path = None")
             return None
 
         api_key = os.environ.get("GEMINI_KEY")
         if not api_key:
-            print("ERROR: GEMINI_KEY not set")
             return None
 
         client = genai.Client(api_key=api_key)
@@ -99,7 +97,6 @@ CRITICAL RULES:
             )
 
             if not response or not response.text:
-                print("ERROR: Gemini returned empty response")
                 return None
 
             try:
@@ -159,6 +156,5 @@ CRITICAL RULES:
 
         except Exception:
             db.rollback()
-            print("EXTRACTION ERROR:")
             traceback.print_exc()
             return None

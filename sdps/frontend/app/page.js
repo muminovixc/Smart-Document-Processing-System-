@@ -13,7 +13,7 @@ export default function UploadPage() {
   const [uploading, setUploading] = useState(false);
   const [validationMessage, setValidationMessage] = useState("");
   const [dragging, setDragging] = useState(false);
-  const [previewDoc, setPreviewDoc] = useState(null); // Stanje za modal
+  const [previewDoc, setPreviewDoc] = useState(null);
   const [previewContent, setPreviewContent] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState("");
