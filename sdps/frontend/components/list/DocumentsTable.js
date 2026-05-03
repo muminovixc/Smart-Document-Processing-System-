@@ -258,6 +258,7 @@ export default function DocumentsTable({
         </span>
         <div style={{ display: "flex", gap: 6 }}>
           {Object.entries(currencyTotals).map(([cur, total]) => (
+            <span key={cur} style={{ fontSize: 12, color: "#666" }}></span>
           ))}
         </div>
       </div>
