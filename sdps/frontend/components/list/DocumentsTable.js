@@ -19,6 +19,7 @@ export default function DocumentsTable({
         overflow: "hidden",
       }}
     >
+     
       <table
         style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}
       >
@@ -257,21 +258,6 @@ export default function DocumentsTable({
         </span>
         <div style={{ display: "flex", gap: 6 }}>
           {Object.entries(currencyTotals).map(([cur, total]) => (
-            <span
-              key={cur}
-              style={{
-                fontSize: 11,
-                background: "#F5F4F0",
-                padding: "3px 9px",
-                borderRadius: 6,
-                color: "#666",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              <strong>{cur}</strong>{" "}
-              {cur === "EUR" ? "€" : cur === "USD" ? "$" : "KM"}
-              {total.toLocaleString("en", { minimumFractionDigits: 2 })}
-            </span>
           ))}
         </div>
       </div>

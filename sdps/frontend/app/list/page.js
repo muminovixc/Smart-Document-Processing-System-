@@ -1,5 +1,9 @@
 "use client";
 
+export const metadata = {
+  title: "Smart Document Processing System - Document List",
+};
+
 import { useState, useMemo, useEffect } from "react";
 import {
   Upload,

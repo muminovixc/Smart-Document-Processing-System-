@@ -188,6 +188,12 @@ export default function UploadPage() {
 
   return (
     <div className="upload-container">
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
       {previewDoc && (
         <PreviewModal
           previewDoc={previewDoc}
@@ -216,22 +222,6 @@ export default function UploadPage() {
           still starting.
         </div>
 
-        {isLoadingDocuments && (
-          <div
-            style={{
-              margin: "10px 0",
-              padding: "12px 16px",
-              borderRadius: 12,
-              background: "#eef4ff",
-              border: "1px solid #b8d0ff",
-              color: "#1a3d8f",
-              fontSize: 14,
-            }}
-          >
-            Loading documents from the database... please wait a moment.
-          </div>
-        )}
-
         <DropZone
           dragging={dragging}
           onDragOver={(e) => {
@@ -248,6 +238,28 @@ export default function UploadPage() {
           fileInputRef={fileInputRef}
           onFileChange={(e) => handleFileSelection(e.target.files)}
         />
+
+        {isLoadingDocuments && (
+          <div
+            style={{
+              margin: "10px 0",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <div
+              style={{
+                width: "24px",
+                height: "24px",
+                border: "3px solid #b8d0ff",
+                borderTop: "3px solid #1a3d8f",
+                borderRadius: "50%",
+                animation: "spin 1s linear infinite",
+              }}
+            ></div>
+          </div>
+        )}
 
         {files.length > 0 && (
           <button
