@@ -1,4 +1,6 @@
-export default function DocumentCard({ doc, onView }) {
+import Link from "next/link";
+
+export default function DocumentCard({ doc }) {
   return (
     <div className={`doc-card ${doc.status}`}>
       <div
@@ -27,19 +29,24 @@ export default function DocumentCard({ doc, onView }) {
           <span className={`status-tag status-${doc.status}`}>
             {doc.status.replace("_", " ")}
           </span>
-          <button
-            className="view-btn"
-            onClick={() => onView(doc)}
+          <Link
+            href="/list"
             style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
               padding: "4px 8px",
               fontSize: "11px",
               cursor: "pointer",
               borderRadius: "4px",
               border: "1px solid #ddd",
+              textDecoration: "none",
+              color: "#333",
+              background: "#fff",
             }}
           >
-            View Document
-          </button>
+            View documents
+          </Link>
         </div>
       </div>
 
