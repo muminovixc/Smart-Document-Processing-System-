@@ -79,6 +79,12 @@ export default function DetailPanel({ doc, onClose }) {
             ["Due date", doc.dueDate || "—"],
             ["Currency", doc.currency],
             [
+              "Tax amount",
+              doc.tax_amount != null || doc.tax != null
+                ? `${doc.currency === "EUR" ? "€" : doc.currency === "USD" ? "$" : "KM"} ${((doc.tax_amount ?? doc.tax) || 0).toLocaleString("en", { minimumFractionDigits: 2 })}`
+                : "—",
+            ],
+            [
               "Total amount",
               doc.amount != null
                 ? `${doc.currency === "EUR" ? "€" : doc.currency === "USD" ? "$" : "KM"} ${doc.amount.toLocaleString("en", { minimumFractionDigits: 2 })}`
@@ -143,8 +149,6 @@ export default function DetailPanel({ doc, onClose }) {
             </div>
           </div>
         )}
-
-        
       </div>
     </div>
   );

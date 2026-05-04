@@ -65,8 +65,7 @@ export default function UploadPage() {
       setPreviewError("");
       setPreviewContent("");
 
-      const fileName = previewDoc.file_path.split(/[/\\]/).pop();
-      const fileUrl = `${API_BASE_URL}/static/${fileName}`;
+      const fileUrl = `${API_BASE_URL}/documents/${previewDoc.id}/file`;
 
       try {
         const res = await fetch(fileUrl);
@@ -116,8 +115,7 @@ export default function UploadPage() {
 
   // Helper funkcija za prikaz dokumenta
   const renderPreviewContent = (doc) => {
-    const fileName = doc.file_path.split(/[/\\]/).pop();
-    const fileUrl = `${API_BASE_URL}/static/${fileName}`;
+    const fileUrl = `${API_BASE_URL}/documents/${doc.id}/file`;
     const ext = doc.original_filename.toLowerCase().split(".").pop();
 
     if (ext === "pdf") {

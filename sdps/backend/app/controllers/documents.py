@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
+from pathlib import Path
 from app.db.database import get_db
 from app.services.documents import DocumentService
 from app.schemas.documents import DocumentResponse
@@ -103,6 +105,24 @@ async def upload_document(
     background_tasks.add_task(process_workflow, db_doc.id, db)
 
     return db_doc
+
+
+@router.get(
+    "/{document_id}/file"
+)
+def get_document_file(document_id: int, db: Session = Depends(get_db)):
+    doc = DocumentService.get_by_id(db, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    file_path = Path(doc.file_path)
+    if not file_path.is_absolute():
+        file_path = Path.cwd() / file_path
+
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+
+    return FileResponse(str(file_path), media_type="application/octet-stream")
 
 
 @router.get(

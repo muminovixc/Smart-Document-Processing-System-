@@ -56,6 +56,15 @@ export default function DocumentCard({ doc, onView }) {
               Supplier: <strong>{doc.supplier_name || "N/A"}</strong>
             </span>
             <span>
+              Tax:{" "}
+              <strong>
+                {doc.tax_amount ?? doc.tax ?? "—"} {doc.currency || ""}
+              </strong>
+            </span>
+          </div>
+          <div className="data-row" style={{ marginTop: 8 }}>
+            <span />
+            <span>
               Total:{" "}
               <strong>
                 {doc.total_amount} {doc.currency}
