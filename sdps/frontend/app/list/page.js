@@ -40,6 +40,7 @@ function mapDoc(doc) {
     dueDate: doc.due_date || null,
     amount: doc.total_amount || 0,
     currency: doc.currency || "—",
+    tax: doc.tax ?? doc.tax_amount ?? 0,
     issues,
     status: doc.status,
   };
